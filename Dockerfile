@@ -1,5 +1,5 @@
 # Multi-stage build
-FROM gradle:8.10-jdk21 AS builder
+FROM gradle:8.10-jdk17 AS builder
 WORKDIR /app
 
 # Copy gradle files
@@ -14,7 +14,7 @@ RUN chmod +x ./gradlew
 RUN ./gradlew clean bootJar --no-daemon -x test
 
 # Runtime
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Create non-root user
