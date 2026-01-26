@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  workit-backend:
+    build: .
+    image: workit-backend:latest
+    container_name: workit-api
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://52.79.240.230:3306/workit_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=workit
+      - SPRING_DATASOURCE_PASSWORD=1013
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    restart: unless-stopped
+    networks:
+      - workit-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8087/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  workit-network:
+    driver: bridge

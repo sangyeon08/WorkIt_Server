@@ -34,3 +34,12 @@ springdoc:
     path: /api-docs
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
