@@ -1,0 +1,12 @@
+services:
+  workit-backend:
+    image: workit-spring_prod:latest
+    container_name: workit-api
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://52.79.240.230:3306/workit_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=workit
+      - SPRING_DATASOURCE_PASSWORD=1013
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    restart: unless-stopped
