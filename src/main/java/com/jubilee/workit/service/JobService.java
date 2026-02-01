@@ -1,16 +1,23 @@
 package com.jubilee.workit.service;
 
+import com.jubilee.workit.dto.CompanyDto;
 import com.jubilee.workit.dto.JobCardDto;
+import com.jubilee.workit.dto.JobDetailDto;
+import com.jubilee.workit.dto.LocationDto;
 import com.jubilee.workit.dto.PageResponse;
 import com.jubilee.workit.entity.Category;
 import com.jubilee.workit.entity.JobPosting;
+import com.jubilee.workit.repository.ApplicationRepository;
+import com.jubilee.workit.repository.BookmarkRepository;
 import com.jubilee.workit.repository.JobPostingRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,11 +28,93 @@ import java.util.stream.Collectors;
 public class JobService {
 
     private final JobPostingRepository jobPostingRepository;
+    private final BookmarkRepository bookmarkRepository;
+    private final ApplicationRepository applicationRepository;
 
-    public JobService(JobPostingRepository jobPostingRepository) {
+    public JobService(JobPostingRepository jobPostingRepository,
+                      BookmarkRepository bookmarkRepository,
+                      ApplicationRepository applicationRepository) {
         this.jobPostingRepository = jobPostingRepository;
+        this.bookmarkRepository = bookmarkRepository;
+        this.applicationRepository = applicationRepository;
     }
 
+    // ========== 공고 상세 조회 (NEW) ==========
+    public JobDetailDto getJobDetail(Long jobId, Long userId) {
+        JobPosting job = jobPostingRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "공고를 찾을 수 없습니다."));
+
+        JobDetailDto dto = new JobDetailDto();
+        dto.setId(job.getId());
+        dto.setTitle(job.getTitle());
+        dto.setDescription(job.getDescription());
+
+        // Company 정보
+        if (job.getCompany() != null) {
+            CompanyDto companyDto = new CompanyDto();
+            companyDto.setId(job.getCompany().getId());
+            companyDto.setName(job.getCompany().getName());
+            companyDto.setDescription(job.getCompany().getDescription());
+            companyDto.setLogoUrl(job.getCompany().getLogoUrl());
+            companyDto.setWebsiteUrl(job.getCompany().getWebsiteUrl());
+            dto.setCompany(companyDto);
+        }
+
+        // Location 정보
+        if (job.getLocation() != null) {
+            LocationDto locationDto = new LocationDto();
+            locationDto.setId(job.getLocation().getId());
+            locationDto.setName(job.getLocation().getName());
+            locationDto.setCity(job.getLocation().getCity());
+            locationDto.setCountry(job.getLocation().getCountry());
+            locationDto.setLatitude(job.getLocation().getLatitude());
+            locationDto.setLongitude(job.getLocation().getLongitude());
+            dto.setLocation(locationDto);
+        }
+
+        // Compensation
+        dto.setCompensationAmount(job.getCompensationAmount());
+        dto.setCompensationType(job.getCompensationType());
+
+        // Job details
+        dto.setJobType(job.getJobType());
+        dto.setDurationType(job.getDurationType());
+
+        // Categories
+        List<String> categoryNames = job.getCategories().stream()
+                .map(Category::getName)
+                .collect(Collectors.toList());
+        dto.setCategoryNames(categoryNames);
+
+        // Image
+        dto.setImageUrl(job.getImageUrl());
+
+        // Status flags
+        dto.setHot(job.isHot());
+        LocalDateTime dayAgo = LocalDateTime.now().minusDays(1);
+        dto.setNew(job.getPublishedAt() != null && job.getPublishedAt().isAfter(dayAgo));
+
+        // 북마크 여부 체크 (userId가 있을 때만)
+        if (userId != null) {
+            boolean isBookmarked = bookmarkRepository.existsByUser_IdAndJobPosting_Id(userId, jobId);
+            dto.setBookmarked(isBookmarked);
+        } else {
+            dto.setBookmarked(false);
+        }
+
+        // Timestamps
+        dto.setPublishedAt(job.getPublishedAt());
+        dto.setExpiresAt(job.getExpiresAt());
+
+        // 지원자 수
+        Integer applicantCount = applicationRepository.countByJobPostingId(jobId);
+        dto.setApplicantCount(applicantCount != null ? applicantCount : 0);
+
+        return dto;
+    }
+
+    // ========== 기존 메서드들 ==========
     public PageResponse<JobCardDto> getHotPostings(int page, int size) {
         Pageable p = PageRequest.of(page, size, Sort.by("publishedAt").descending());
         Page<JobPosting> result = jobPostingRepository.findHotPostings(p);
