@@ -1,5 +1,10 @@
 package com.jubilee.workit.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class AuthResponse {
     private Long userId;
     private String email;
@@ -28,24 +33,4 @@ public class AuthResponse {
         this.expiresIn = expiresIn;
     }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
-
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-
-    public String getAccessToken() { return accessToken; }
-    public void setAccessToken(String accessToken) { this.accessToken = accessToken; }
-
-    public String getTokenType() { return tokenType; }
-    public void setTokenType(String tokenType) { this.tokenType = tokenType; }
-
-    public Long getExpiresIn() { return expiresIn; }
-    public void setExpiresIn(Long expiresIn) { this.expiresIn = expiresIn; }
 }
