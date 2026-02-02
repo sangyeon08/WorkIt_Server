@@ -1,8 +1,11 @@
 package com.jubilee.workit.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class AppleLoginRequest {
     private String identityToken;
 
-    public String getIdentityToken() { return identityToken; }
-    public void setIdentityToken(String identityToken) { this.identityToken = identityToken; }
 }

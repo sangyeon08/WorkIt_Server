@@ -1,7 +1,7 @@
 package com.jubilee.workit.entity;
 
 import jakarta.persistence.*;
-
+//카테고리에 들어가는 값들을 내가 하나하나 다 넣어야하나? -> 아니면 enum같은걸로 만들어서 넣어야하나?
 @Entity
 @Table(name = "categories")
 public class Category {

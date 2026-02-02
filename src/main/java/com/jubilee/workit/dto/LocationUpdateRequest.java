@@ -1,8 +1,11 @@
 package com.jubilee.workit.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class LocationUpdateRequest {
     private Long locationId;
 
-    public Long getLocationId() { return locationId; }
-    public void setLocationId(Long locationId) { this.locationId = locationId; }
 }

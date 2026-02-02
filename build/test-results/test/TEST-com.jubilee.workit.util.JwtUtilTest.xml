@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.jubilee.workit.util.JwtUtilTest" tests="3" skipped="0" failures="1" errors="0" timestamp="2026-02-01T23:47:18.088Z" hostname="slee-MacBook-Air.local" time="0.055">
+  <properties/>
+  <testcase name="createAndParse_withBase64Secret_shouldSucceed()" classname="com.jubilee.workit.util.JwtUtilTest" time="0.052"/>
+  <testcase name="createAndParse_withRawUtf8SecretOfSufficientLength_shouldSucceed()" classname="com.jubilee.workit.util.JwtUtilTest" time="0.002">
+    <failure message="java.lang.IllegalArgumentException: JWT secret is too short. Provide at least 256 bits (32 bytes) key." type="java.lang.IllegalArgumentException">java.lang.IllegalArgumentException: JWT secret is too short. Provide at least 256 bits (32 bytes) key.
+	at com.jubilee.workit.util.JwtUtil.&lt;init&gt;(JwtUtil.java:42)
+	at com.jubilee.workit.util.JwtUtilTest.createAndParse_withRawUtf8SecretOfSufficientLength_shouldSucceed(JwtUtilTest.java:32)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+</failure>
+  </testcase>
+  <testcase name="constructor_withTooShortSecret_shouldThrow()" classname="com.jubilee.workit.util.JwtUtilTest" time="0.001"/>
+  <system-out><![CDATA[2026-02-02T10:47:18.141+11:00 ERROR 12515 --- [workit] [    Test worker] com.jubilee.workit.util.JwtUtil          : JWT secret is too short. Provide at least 256 bits (32 bytes) key. Current length: 192 bits.
+2026-02-02T10:47:18.143+11:00 ERROR 12515 --- [workit] [    Test worker] com.jubilee.workit.util.JwtUtil          : JWT secret is too short. Provide at least 256 bits (32 bytes) key. Current length: 40 bits.
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

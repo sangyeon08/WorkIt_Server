@@ -39,7 +39,7 @@ public class JobService {
         this.applicationRepository = applicationRepository;
     }
 
-    // ========== 공고 상세 조회 (NEW) ==========
+    // 공고 상세 조회
     public JobDetailDto getJobDetail(Long jobId, Long userId) {
         JobPosting job = jobPostingRepository.findById(jobId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -114,7 +114,6 @@ public class JobService {
         return dto;
     }
 
-    // ========== 기존 메서드들 ==========
     public PageResponse<JobCardDto> getHotPostings(int page, int size) {
         Pageable p = PageRequest.of(page, size, Sort.by("publishedAt").descending());
         Page<JobPosting> result = jobPostingRepository.findHotPostings(p);
