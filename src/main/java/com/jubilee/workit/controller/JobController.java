@@ -18,6 +18,17 @@ public class JobController {
         this.jobService = jobService;
     }
 
+    // 근처 공고 검색
+    @GetMapping(value = "/nearby", produces = MediaType.APPLICATION_JSON_VALUE)
+    public PageResponse<JobCardDto> nearby(
+            @RequestParam double latitude,
+            @RequestParam double longitude,
+            @RequestParam(defaultValue = "10.0") double radiusKm,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return jobService.getNearby(latitude, longitude, radiusKm, page, size);
+    }
+
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public JobDetailDto getJobDetail(
             @PathVariable Long id,
