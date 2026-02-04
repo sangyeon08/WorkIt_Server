@@ -22,6 +22,12 @@ spring:
     init:
       mode: always
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 logging:
   level:
     org.hibernate.SQL: DEBUG
@@ -42,10 +48,14 @@ springdoc:
 
 workit:
   jwt:
-    secret: ${JWT_SECRET:workit-dev-secret-key-min-256-bits-for-hs256}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    secret: workit-dev-secret-key-min-256-bits-for-hs256
+    expiration-ms: 86400000
   google:
-    client-id: ${GOOGLE_CLIENT_ID:}
+    client-id: 882310203258-5t7q6ps3a45b7vfhe3cme9fs09bd7g28.apps.googleusercontent.com
+  apple:
+    client-id:
+  image:
+    upload-dir: uploads/images
 
 management:
   endpoints:
