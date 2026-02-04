@@ -33,11 +33,28 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
+                        // 인증 없이 접근 가능
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/google", "/api/auth/apple").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**", "/api/locations").permitAll()
+
+                        // 공고, 지역, 카테고리는 누구나 조회 가능
+                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**", "/api/locations", "/api/categories").permitAll()
+
+                        // 이미지 조회는 누구나 가능 (업로드는 인증 필요)
+                        .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
+
+                        // Swagger 문서
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
+
+                        // Actuator
                         .requestMatchers("/actuator/**").permitAll()
+
+                        // OPTIONS 요청 (CORS preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // WebSocket
+                        .requestMatchers("/ws-chat/**").permitAll()
+
+                        // 나머지는 모두 인증 필요
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
