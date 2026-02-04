@@ -25,3 +25,5 @@ logs/
 *.sqlite
 
 .DS_Store
+
+echo ".env" >> .gitignore
