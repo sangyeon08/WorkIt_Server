@@ -1,5 +1,6 @@
 package com.jubilee.workit.service;
 
+import com.jubilee.workit.dto.ResumeCreateRequest;
 import com.jubilee.workit.dto.ResumeDto;
 import com.jubilee.workit.dto.ResumeUpdateRequest;
 import com.jubilee.workit.entity.Resume;

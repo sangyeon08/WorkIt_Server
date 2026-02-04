@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:mysql://52.79.240.230:3306/workit_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: workit
-    password: 1013
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -21,6 +21,12 @@ spring:
   sql:
     init:
       mode: always
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 logging:
   level:
@@ -46,6 +52,10 @@ workit:
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
+  apple:
+    client-id: ${APPLE_CLIENT_ID:}
+  image:
+    upload-dir: uploads/images
 
 management:
   endpoints:
