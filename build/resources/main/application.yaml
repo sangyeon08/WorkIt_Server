@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:mysql://52.79.240.230:3306/workit_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: workit
-    password: ${DB_PASSWORD}
+    password: 1013
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -48,12 +48,12 @@ springdoc:
 
 workit:
   jwt:
-    secret: ${JWT_SECRET:workit-dev-secret-key-min-256-bits-for-hs256}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    secret: workit-dev-secret-key-min-256-bits-for-hs256
+    expiration-ms: 86400000
   google:
-    client-id: ${GOOGLE_CLIENT_ID:}
+    client-id:
   apple:
-    client-id: ${APPLE_CLIENT_ID:}
+    client-id:
   image:
     upload-dir: uploads/images
 
