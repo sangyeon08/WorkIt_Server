@@ -28,6 +28,10 @@ public class JobPosting {
     @JoinColumn(name = "location_id", nullable = false)
     private Location location;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employer_id")
+    private User employer;
+
     @Column(name = "compensation_amount", precision = 12, scale = 2)
     private BigDecimal compensationAmount;
 
@@ -122,6 +126,9 @@ public class JobPosting {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public User getEmployer() { return employer; }
+    public void setEmployer(User employer) { this.employer = employer; }
 
     public List<Category> getCategories() { return categories; }
     public void setCategories(List<Category> categories) { this.categories = categories != null ? categories : new ArrayList<>(); }
