@@ -84,11 +84,10 @@ public class AuthService {
         );
     }
 
-    public AuthResponse selectRole(RoleSelectRequest request) {
-        User user = userRepository.findById(request.getUserId())
+    public AuthResponse selectRole(Long userId, String role) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
-        String role = request.getRole();
         if (!"JOBSEEKER".equals(role) && !"EMPLOYER".equals(role)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 역할을 선택해주세요. (JOBSEEKER 또는 EMPLOYER)");
         }

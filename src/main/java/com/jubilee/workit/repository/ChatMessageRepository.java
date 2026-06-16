@@ -33,5 +33,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Modifying
     @Query("UPDATE ChatMessage m SET m.read = true WHERE m.chatRoom.id = :chatRoomId AND m.sender.id != :userId AND m.read = false")
     void markMessagesAsReadInRoom(@Param("chatRoomId") Long chatRoomId, @Param("userId") Long userId);
+
+    // 채팅방의 가장 최근 메시지 (채팅방 목록 미리보기용)
+    java.util.Optional<ChatMessage> findTopByChatRoom_IdOrderByCreatedAtDesc(Long chatRoomId);
 }
 

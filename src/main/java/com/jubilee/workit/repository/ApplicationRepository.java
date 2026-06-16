@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.Optional;
 
 @Repository
@@ -36,6 +37,21 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
                                            @Param("status") String status,
                                            @Param("q") String q,
                                            Pageable pageable);
+
+    @Query("SELECT a FROM Application a " +
+            "LEFT JOIN FETCH a.jobPosting j " +
+            "LEFT JOIN FETCH j.company " +
+            "LEFT JOIN FETCH j.location " +
+            "WHERE a.user.id = :userId " +
+            "AND a.status IN :statuses " +
+            "AND (:q IS NULL OR UPPER(j.title) LIKE UPPER(CONCAT('%', :q, '%')) " +
+            "     OR UPPER(j.description) LIKE UPPER(CONCAT('%', :q, '%')) " +
+            "     OR UPPER(j.company.name) LIKE UPPER(CONCAT('%', :q, '%'))) " +
+            "ORDER BY a.appliedAt DESC")
+    Page<Application> searchMyApplicationsByStatuses(@Param("userId") Long userId,
+                                                     @Param("statuses") Collection<String> statuses,
+                                                     @Param("q") String q,
+                                                     Pageable pageable);
 
     // 구인자: 내 공고의 지원자 목록 (상태 필터 + 이메일 검색)
     @Query("SELECT a FROM Application a " +

@@ -33,23 +33,30 @@ public class ChatService {
         this.userRepository = userRepository;
     }
 
-    // 채팅 방 목록 조회
     public PageResponse<ChatRoomDto> getRooms(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<ChatRoom> result = chatRoomRepository.findByEmployer_IdOrApplicant_Id(userId, userId, pageable);
         return PageResponse.of(result.map(r -> toChatRoomDto(r, userId)));
     }
 
-    // 채팅 방 생성 또는 기존 방 반환
     @Transactional
     public ChatRoomDto createOrGetRoom(Long jobPostingId, Long userId) {
         JobPosting job = jobPostingRepository.findById(jobPostingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공고를 찾을 수 없습니다."));
 
+        if (job.getEmployer() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "해당 공고에 담당자 정보가 없습니다. 구인자가 직접 등록한 공고에서만 채팅이 가능합니다.");
+        }
+
+        if (job.getEmployer().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "자신이 등록한 공고에는 채팅방을 생성할 수 없습니다.");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
-        // 이미 존재하는 방이 있는지 확인
         ChatRoom existing = chatRoomRepository.findByJobPosting_IdAndApplicant_Id(jobPostingId, userId)
                 .orElse(null);
 
@@ -57,56 +64,47 @@ public class ChatService {
             return toChatRoomDto(existing, userId);
         }
 
-        // 새 채팅 방 생성
         ChatRoom newRoom = new ChatRoom();
         newRoom.setJobPosting(job);
         newRoom.setApplicant(user);
         newRoom.setEmployer(job.getEmployer());
 
-        ChatRoom saved = chatRoomRepository.save(newRoom);
-        return toChatRoomDto(saved, userId);
+        return toChatRoomDto(chatRoomRepository.save(newRoom), userId);
     }
 
-    // 메시지 목록 조회
     public PageResponse<ChatMessageDto> getMessages(Long roomId, Long userId, int page, int size) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "채팅 방을 찾을 수 없습니다."));
 
-        // 권한 확인: 본인의 채팅 방인지
-        if (!room.getEmployer().getId().equals(userId) && !room.getApplicant().getId().equals(userId)) {
+        if (!isParticipant(room, userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
         Page<ChatMessage> result = chatMessageRepository.findByChatRoom_Id(roomId, pageable);
         return PageResponse.of(result.map(this::toChatMessageDto));
     }
 
-    // 읽음 표시
     @Transactional
     public void markAsRead(Long roomId, Long userId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "채팅 방을 찾을 수 없습니다."));
 
-        // 권한 확인
-        if (!room.getEmployer().getId().equals(userId) && !room.getApplicant().getId().equals(userId)) {
+        if (!isParticipant(room, userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
         }
 
-        // 상대방이 보낸 메시지만 읽음 처리
-        chatMessageRepository.findByChatRoom_IdAndSender_IdNot(roomId, userId)
-                .forEach(msg -> {
-                    if (!msg.isRead()) {
-                        msg.setRead(true);
-                    }
-                });
+        chatMessageRepository.markMessagesAsReadInRoom(roomId, userId);
     }
 
-    // 메시지 저장 (WebSocket에서 호출)
     @Transactional
     public ChatMessage saveMessage(Long roomId, Long senderId, String message) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "채팅 방을 찾을 수 없습니다."));
+
+        if (!isParticipant(room, senderId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "채팅방 참여자가 아닙니다.");
+        }
 
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
@@ -120,32 +118,45 @@ public class ChatService {
         return chatMessageRepository.save(chatMessage);
     }
 
-    // 전체 읽지 않은 메시지 개수 조회
     public Long getTotalUnreadCount(Long userId) {
         return chatMessageRepository.countUnreadMessagesForUser(userId);
     }
 
-    // DTO 변환
+    private boolean isParticipant(ChatRoom room, Long userId) {
+        boolean isEmployer = room.getEmployer() != null && room.getEmployer().getId().equals(userId);
+        boolean isApplicant = room.getApplicant() != null && room.getApplicant().getId().equals(userId);
+        return isEmployer || isApplicant;
+    }
+
     private ChatRoomDto toChatRoomDto(ChatRoom room, Long currentUserId) {
         ChatRoomDto dto = new ChatRoomDto();
         dto.setId(room.getId());
         dto.setJobPostingId(room.getJobPosting().getId());
         dto.setJobTitle(room.getJobPosting().getTitle());
 
-        // 상대방 정보 (employer 또는 applicant)
-        if (room.getEmployer() != null && room.getEmployer().getId().equals(currentUserId)) {
+        boolean currentUserIsEmployer = room.getEmployer() != null
+                && room.getEmployer().getId().equals(currentUserId);
+
+        if (currentUserIsEmployer) {
             dto.setOtherUserId(room.getApplicant().getId());
             dto.setOtherUserName(room.getApplicant().getEmail());
-        } else if (room.getApplicant() != null) {
+        } else {
             dto.setOtherUserId(room.getEmployer() != null ? room.getEmployer().getId() : null);
             dto.setOtherUserName(room.getEmployer() != null ? room.getEmployer().getEmail() : "Unknown");
         }
 
         dto.setCreatedAt(room.getCreatedAt());
 
-        // 미읽음 메시지 수
-        Long unreadCount = chatMessageRepository.countByChatRoom_IdAndSender_IdNotAndReadFalse(room.getId(), currentUserId);
+        Long unreadCount = chatMessageRepository.countByChatRoom_IdAndSender_IdNotAndReadFalse(
+                room.getId(), currentUserId);
         dto.setUnreadCount(unreadCount);
+
+        // 마지막 메시지 미리보기
+        chatMessageRepository.findTopByChatRoom_IdOrderByCreatedAtDesc(room.getId())
+                .ifPresent(last -> {
+                    dto.setLastMessage(last.getMessage());
+                    dto.setLastMessageTime(last.getCreatedAt());
+                });
 
         return dto;
     }

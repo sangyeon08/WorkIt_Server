@@ -1,6 +1,6 @@
 HELP.md
 .gradle
-#build/
+build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -26,5 +26,3 @@ logs/
 *.sqlite
 
 .DS_Store
-
-echo ".env" >> .gitignore

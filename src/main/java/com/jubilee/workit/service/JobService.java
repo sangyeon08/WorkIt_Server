@@ -166,21 +166,21 @@ public class JobService {
         if (req.getJobType() == null || req.getJobType().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "고용 유형(jobType)은 필수입니다.");
         }
+        if (req.getLocationId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "지역(locationId)은 필수입니다.");
+        }
+        if (req.getCompanyId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기업(companyId)은 필수입니다.");
+        }
 
         User employer = userRepository.findById(employerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
-        Location location = null;
-        if (req.getLocationId() != null) {
-            location = locationRepository.findById(req.getLocationId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "존재하지 않는 지역입니다."));
-        }
+        Location location = locationRepository.findById(req.getLocationId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "존재하지 않는 지역입니다."));
 
-        Company company = null;
-        if (req.getCompanyId() != null) {
-            company = companyRepository.findById(req.getCompanyId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "존재하지 않는 기업입니다."));
-        }
+        Company company = companyRepository.findById(req.getCompanyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "존재하지 않는 기업입니다."));
 
         List<Category> categories = new ArrayList<>();
         if (req.getCategoryIds() != null && !req.getCategoryIds().isEmpty()) {

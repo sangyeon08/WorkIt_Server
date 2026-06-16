@@ -90,7 +90,12 @@ public class ImageController {
     @ApiResponse(responseCode = "200", description = "이미지 반환")
     public ResponseEntity<byte[]> getImage(@Parameter(description = "파일명") @PathVariable String filename) {
         try {
-            Path filePath = Paths.get(uploadDir).resolve(filename);
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Path filePath = uploadPath.resolve(filename).normalize();
+
+            if (!filePath.startsWith(uploadPath)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 파일명입니다.");
+            }
 
             if (!Files.exists(filePath)) {
                 throw new ResponseStatusException(

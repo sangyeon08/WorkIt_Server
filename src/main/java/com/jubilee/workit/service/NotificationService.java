@@ -69,16 +69,7 @@ public class NotificationService {
 
     @Transactional
     public void markAllAsRead(Long userId) {
-        Pageable pageable = PageRequest.of(0, 1000);
-        Page<Notification> notifications = notificationRepository.findByUser_IdOrderByCreatedAtDesc(userId, pageable);
-
-        notifications.getContent().forEach(notification -> {
-            if (!notification.isRead()) {
-                notification.setRead(true);
-            }
-        });
-
-        notificationRepository.saveAll(notifications.getContent());
+        notificationRepository.markAllAsReadByUserId(userId);
     }
 
     @Transactional

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +56,11 @@ public class ApplicationService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "공고를 찾을 수 없습니다."));
 
+        // 구인자는 지원 불가
+        if ("EMPLOYER".equals(user.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "구인자는 공고에 지원할 수 없습니다.");
+        }
+
         // 중복 지원 확인
         if (applicationRepository.existsByUser_IdAndJobPosting_Id(userId, jobId)) {
             throw new ResponseStatusException(
@@ -84,17 +90,13 @@ public class ApplicationService {
         return toDto(saved);
     }
 
-    public PageResponse<ApplicationDto> getMyApplications(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("appliedAt").descending());
-        Page<Application> result = applicationRepository.findByUser_IdOrderByAppliedAtDesc(userId, pageable);
-        return PageResponse.of(result.map(this::toDto));
-    }
-
     public PageResponse<ApplicationDto> getMyApplications(Long userId, String status, String q, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("appliedAt").descending());
-        String normalizedStatus = normalizeStatus(status);
         String keyword = q == null || q.isBlank() ? null : q.trim();
-        Page<Application> result = applicationRepository.searchMyApplications(userId, normalizedStatus, keyword, pageable);
+        List<String> statuses = normalizeStatusToList(status);
+        Page<Application> result = statuses != null
+                ? applicationRepository.searchMyApplicationsByStatuses(userId, statuses, keyword, pageable)
+                : applicationRepository.searchMyApplications(userId, null, keyword, pageable);
         return PageResponse.of(result.map(this::toDto));
     }
 
@@ -125,7 +127,11 @@ public class ApplicationService {
         }
 
         // 이미 처리된 지원은 취소 불가
-        if ("ACCEPTED".equals(application.getStatus()) || "REJECTED".equals(application.getStatus())) {
+        String currentStatus = application.getStatus();
+        if ("WITHDRAWN".equals(currentStatus)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 취소된 지원입니다.");
+        }
+        if ("ACCEPTED".equals(currentStatus) || "REJECTED".equals(currentStatus)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "이미 처리된 지원은 취소할 수 없습니다.");
         }
@@ -139,7 +145,7 @@ public class ApplicationService {
     public PageResponse<EmployerApplicationDto> getJobApplications(
             Long jobId, Long employerId, String status, String q, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("appliedAt").descending());
-        String normalizedStatus = normalizeStatus(status);
+        String normalizedStatus = normalizeEmployerStatus(status);
         String keyword = q == null || q.isBlank() ? null : q.trim();
         Page<Application> result = applicationRepository.findByJobIdAndEmployerId(
                 jobId, employerId, normalizedStatus, keyword, pageable);
@@ -271,10 +277,21 @@ public class ApplicationService {
         return dto;
     }
 
+    // 구직자 뷰: "Application submitted" 필터 → PENDING + REVIEWING 모두 포함
+    private List<String> normalizeStatusToList(String status) {
+        if (status == null || status.isBlank() || "All".equalsIgnoreCase(status)) return null;
+
+        return switch (status.trim().toUpperCase()) {
+            case "APPLICATION SUBMITTED", "APPLIED", "PENDING", "REVIEWING" -> List.of("PENDING", "REVIEWING");
+            case "PASSED", "ACCEPTED" -> List.of("ACCEPTED");
+            case "FAILED", "REJECTED" -> List.of("REJECTED");
+            case "WITHDRAWN" -> List.of("WITHDRAWN");
+            default -> null;
+        };
+    }
+
     private String normalizeStatus(String status) {
-        if (status == null || status.isBlank() || "All".equalsIgnoreCase(status)) {
-            return null;
-        }
+        if (status == null || status.isBlank() || "All".equalsIgnoreCase(status)) return null;
 
         return switch (status.trim().toUpperCase()) {
             case "APPLICATION SUBMITTED", "APPLIED", "PENDING", "REVIEWING" -> "PENDING";
@@ -282,6 +299,22 @@ public class ApplicationService {
             case "FAILED", "REJECTED" -> "REJECTED";
             case "WITHDRAWN" -> "WITHDRAWN";
             default -> status.trim().toUpperCase();
+        };
+    }
+
+    // 구인자 뷰: 실제 DB 상태값 그대로 사용
+    private String normalizeEmployerStatus(String status) {
+        if (status == null || status.isBlank() || "All".equalsIgnoreCase(status)) {
+            return null;
+        }
+
+        return switch (status.trim().toUpperCase()) {
+            case "PENDING" -> "PENDING";
+            case "REVIEWING" -> "REVIEWING";
+            case "ACCEPTED", "PASSED" -> "ACCEPTED";
+            case "REJECTED", "FAILED" -> "REJECTED";
+            case "WITHDRAWN" -> "WITHDRAWN";
+            default -> null;
         };
     }
 

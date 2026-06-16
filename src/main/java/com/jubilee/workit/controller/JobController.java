@@ -42,7 +42,8 @@ public class JobController {
     public JobDetailDto getJobDetail(
             @Parameter(description = "공고 ID") @PathVariable Long id,
             Authentication authentication) {
-        Long userId = authentication != null ? (Long) authentication.getPrincipal() : null;
+        Long userId = (authentication != null && authentication.getPrincipal() instanceof Long)
+                ? (Long) authentication.getPrincipal() : null;
         if (userId != null) {
             recentlyViewedJobService.recordView(userId, id);
         }

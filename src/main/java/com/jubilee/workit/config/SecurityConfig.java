@@ -1,6 +1,7 @@
 package com.jubilee.workit.config;
 
 import com.jubilee.workit.security.JwtAuthFilter;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -39,6 +40,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
+                        // Spring 내부 에러 포워딩 (DispatcherType.ERROR) 허용
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+
                         // 인증 없이 접근 가능
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/google", "/api/auth/apple").permitAll()
 

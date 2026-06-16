@@ -6,6 +6,7 @@ import com.jubilee.workit.repository.LocationRepository;
 import com.jubilee.workit.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -37,6 +38,7 @@ public class UserLocationService {
                 .orElse(null);
     }
 
+    @Transactional
     public void setLocation(Long userId, Long locationId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));

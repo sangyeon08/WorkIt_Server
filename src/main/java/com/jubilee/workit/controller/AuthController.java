@@ -37,8 +37,9 @@ public class AuthController {
     @PostMapping(value = "/role", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "역할 선택", description = "소셜 로그인 후 구직자/고용주 역할을 선택합니다.")
     @ApiResponse(responseCode = "200", description = "갱신된 JWT 토큰 반환")
-    public AuthResponse selectRole(@RequestBody RoleSelectRequest request) {
-        return authService.selectRole(request);
+    public AuthResponse selectRole(@RequestBody RoleSelectRequest request, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return authService.selectRole(userId, request.getRole());
     }
 
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
