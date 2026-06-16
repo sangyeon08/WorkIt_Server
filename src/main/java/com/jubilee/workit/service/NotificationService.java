@@ -4,7 +4,9 @@ import com.jubilee.workit.dto.NotificationDto;
 import com.jubilee.workit.dto.PageResponse;
 import com.jubilee.workit.dto.UnreadCountDto;
 import com.jubilee.workit.entity.Notification;
+import com.jubilee.workit.entity.User;
 import com.jubilee.workit.repository.NotificationRepository;
+import com.jubilee.workit.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,9 +21,23 @@ import org.springframework.web.server.ResponseStatusException;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
-    public NotificationService(NotificationRepository notificationRepository) {
+    public NotificationService(NotificationRepository notificationRepository, UserRepository userRepository) {
         this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+    }
+
+    @Transactional
+    public void createNotification(Long userId, String message, String type) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) return;
+
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setMessage(message);
+        notification.setType(type);
+        notificationRepository.save(notification);
     }
 
     public PageResponse<NotificationDto> listByUser(Long userId, int page, int size) {

@@ -19,6 +19,7 @@ public class JobCardDto {
     private boolean hot;
     private boolean _new;
     private LocalDateTime publishedAt;
+    private LocalDateTime expiresAt;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -56,4 +57,7 @@ public class JobCardDto {
 
     public LocalDateTime getPublishedAt() { return publishedAt; }
     public void setPublishedAt(LocalDateTime publishedAt) { this.publishedAt = publishedAt; }
+
+    public LocalDateTime getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
 }

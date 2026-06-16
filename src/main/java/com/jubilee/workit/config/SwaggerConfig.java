@@ -26,8 +26,10 @@ public class SwaggerConfig {
                                 .name("WorkIt Team")
                                 .url("https://github.com/Jubilee-WorkIt")))
                 .servers(List.of(
-                        new Server().url("https://api-workit.mmhs.app").description("API WorkIt (mmhs)"),
+                        new Server().url("http://54.180.201.136:8080").description("Ubuntu server direct port"),
+                        new Server().url("http://54.180.201.136").description("Production server (AWS)"),
                         new Server().url("http://localhost:8080").description("Development server"),
+                        new Server().url("https://api-workit.mmhs.app").description("API WorkIt (mmhs)"),
                         new Server().url("https://workit.digitalbasis.com").description("Production server")
                 ))
                 .components(new Components()

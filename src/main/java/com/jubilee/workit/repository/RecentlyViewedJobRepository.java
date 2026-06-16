@@ -1,0 +1,17 @@
+package com.jubilee.workit.repository;
+
+import com.jubilee.workit.entity.RecentlyViewedJob;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface RecentlyViewedJobRepository extends JpaRepository<RecentlyViewedJob, Long> {
+    Optional<RecentlyViewedJob> findByUser_IdAndJobPosting_Id(Long userId, Long jobPostingId);
+    Page<RecentlyViewedJob> findByUser_IdOrderByViewedAtDesc(Long userId, Pageable pageable);
+    long countByUser_Id(Long userId);
+    void deleteByUser_IdAndJobPosting_Id(Long userId, Long jobPostingId);
+}

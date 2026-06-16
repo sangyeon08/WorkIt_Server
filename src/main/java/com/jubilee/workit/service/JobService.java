@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,13 +21,25 @@ public class JobService {
     private final JobPostingRepository jobPostingRepository;
     private final BookmarkRepository bookmarkRepository;
     private final ApplicationRepository applicationRepository;
+    private final UserRepository userRepository;
+    private final LocationRepository locationRepository;
+    private final CompanyRepository companyRepository;
+    private final CategoryRepository categoryRepository;
 
     public JobService(JobPostingRepository jobPostingRepository,
                       BookmarkRepository bookmarkRepository,
-                      ApplicationRepository applicationRepository) {
+                      ApplicationRepository applicationRepository,
+                      UserRepository userRepository,
+                      LocationRepository locationRepository,
+                      CompanyRepository companyRepository,
+                      CategoryRepository categoryRepository) {
         this.jobPostingRepository = jobPostingRepository;
         this.bookmarkRepository = bookmarkRepository;
         this.applicationRepository = applicationRepository;
+        this.userRepository = userRepository;
+        this.locationRepository = locationRepository;
+        this.companyRepository = companyRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     // 근처 공고 검색
@@ -138,6 +151,100 @@ public class JobService {
         return PageResponse.of(result.map(this::toCard));
     }
 
+    // ── 구인자 공고 관리 ──────────────────────────────────────────────────────
+
+    public PageResponse<JobCardDto> getMyPostedJobs(Long employerId, int page, int size) {
+        Pageable p = PageRequest.of(page, size, Sort.by("publishedAt").descending());
+        return PageResponse.of(jobPostingRepository.findByEmployerId(employerId, p).map(this::toCard));
+    }
+
+    @Transactional
+    public JobDetailDto createJob(Long employerId, JobCreateRequest req) {
+        if (req.getTitle() == null || req.getTitle().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "제목은 필수입니다.");
+        }
+        if (req.getJobType() == null || req.getJobType().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "고용 유형(jobType)은 필수입니다.");
+        }
+
+        User employer = userRepository.findById(employerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        Location location = null;
+        if (req.getLocationId() != null) {
+            location = locationRepository.findById(req.getLocationId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "존재하지 않는 지역입니다."));
+        }
+
+        Company company = null;
+        if (req.getCompanyId() != null) {
+            company = companyRepository.findById(req.getCompanyId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "존재하지 않는 기업입니다."));
+        }
+
+        List<Category> categories = new ArrayList<>();
+        if (req.getCategoryIds() != null && !req.getCategoryIds().isEmpty()) {
+            categories = categoryRepository.findAllById(req.getCategoryIds());
+        }
+
+        JobPosting job = new JobPosting();
+        job.setTitle(req.getTitle());
+        job.setDescription(req.getDescription());
+        job.setLocation(location);
+        job.setCompany(company);
+        job.setEmployer(employer);
+        job.setCompensationAmount(req.getCompensationAmount());
+        job.setCompensationType(req.getCompensationType());
+        job.setJobType(req.getJobType());
+        job.setDurationType(req.getDurationType());
+        job.setImageUrl(req.getImageUrl());
+        job.setExpiresAt(req.getExpiresAt());
+        job.setCategories(categories);
+
+        return getJobDetail(jobPostingRepository.save(job).getId(), employerId);
+    }
+
+    @Transactional
+    public JobDetailDto updateJob(Long jobId, Long employerId, JobUpdateRequest req) {
+        JobPosting job = jobPostingRepository.findByIdAndEmployer_Id(jobId, employerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공고를 찾을 수 없거나 수정 권한이 없습니다."));
+
+        if (req.getTitle() != null) job.setTitle(req.getTitle());
+        if (req.getDescription() != null) job.setDescription(req.getDescription());
+        if (req.getCompensationAmount() != null) job.setCompensationAmount(req.getCompensationAmount());
+        if (req.getCompensationType() != null) job.setCompensationType(req.getCompensationType());
+        if (req.getJobType() != null) job.setJobType(req.getJobType());
+        if (req.getDurationType() != null) job.setDurationType(req.getDurationType());
+        if (req.getImageUrl() != null) job.setImageUrl(req.getImageUrl());
+        if (req.getExpiresAt() != null) job.setExpiresAt(req.getExpiresAt());
+        if (req.getHot() != null) job.setHot(req.getHot());
+
+        if (req.getLocationId() != null) {
+            Location location = locationRepository.findById(req.getLocationId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "존재하지 않는 지역입니다."));
+            job.setLocation(location);
+        }
+
+        if (req.getCompanyId() != null) {
+            Company company = companyRepository.findById(req.getCompanyId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "존재하지 않는 기업입니다."));
+            job.setCompany(company);
+        }
+
+        if (req.getCategoryIds() != null) {
+            job.setCategories(categoryRepository.findAllById(req.getCategoryIds()));
+        }
+
+        return getJobDetail(jobPostingRepository.save(job).getId(), employerId);
+    }
+
+    @Transactional
+    public void deleteJob(Long jobId, Long employerId) {
+        JobPosting job = jobPostingRepository.findByIdAndEmployer_Id(jobId, employerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공고를 찾을 수 없거나 삭제 권한이 없습니다."));
+        jobPostingRepository.delete(job);
+    }
+
     private JobCardDto toCard(JobPosting j) {
         JobCardDto dto = new JobCardDto();
         dto.setId(j.getId());
@@ -154,6 +261,7 @@ public class JobService {
         LocalDateTime dayAgo = LocalDateTime.now().minusDays(1);
         dto.setNew(j.getPublishedAt() != null && j.getPublishedAt().isAfter(dayAgo));
         dto.setPublishedAt(j.getPublishedAt());
+        dto.setExpiresAt(j.getExpiresAt());
         return dto;
     }
 }

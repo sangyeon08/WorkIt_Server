@@ -7,5 +7,7 @@ import lombok.Setter;
 @Getter
 public class AppleLoginRequest {
     private String identityToken;
+    private String email;
+    private String appleId;
 
 }

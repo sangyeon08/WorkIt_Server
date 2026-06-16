@@ -72,6 +72,13 @@ public class BookmarkService {
         bookmarkRepository.delete(bookmark);
     }
 
+    @Transactional
+    public void removeBookmarks(Long userId, Iterable<Long> jobIds) {
+        for (Long jobId : jobIds) {
+            bookmarkRepository.deleteByUser_IdAndJobPosting_Id(userId, jobId);
+        }
+    }
+
     public PageResponse<BookmarkDto> getMyBookmarks(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Bookmark> result = bookmarkRepository.findByUser_IdOrderByCreatedAtDesc(userId, pageable);
@@ -107,6 +114,7 @@ public class BookmarkService {
         LocalDateTime dayAgo = LocalDateTime.now().minusDays(1);
         dto.setNew(j.getPublishedAt() != null && j.getPublishedAt().isAfter(dayAgo));
         dto.setPublishedAt(j.getPublishedAt());
+        dto.setExpiresAt(j.getExpiresAt());
         return dto;
     }
 }

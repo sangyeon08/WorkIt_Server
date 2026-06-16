@@ -1,6 +1,10 @@
 package com.jubilee.workit.controller;
 
 import com.jubilee.workit.dto.ImageUploadResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,6 +21,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/images")
+@Tag(name = "Image", description = "이미지 API")
 public class ImageController {
 
     @Value("${workit.image.upload-dir:uploads/images}")
@@ -25,7 +30,9 @@ public class ImageController {
     // 이미지 업로드 (multipart)
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ImageUploadResponse uploadImage(@RequestParam("file") MultipartFile file) {
+    @Operation(summary = "이미지 업로드", description = "jpg, jpeg, png, pdf 파일을 업로드합니다. (최대 10MB)")
+    @ApiResponse(responseCode = "200", description = "업로드 성공, 이미지 URL 반환")
+    public ImageUploadResponse uploadImage(@Parameter(description = "업로드할 이미지 파일") @RequestParam("file") MultipartFile file) {
         // 파일 검증
         if (file.isEmpty()) {
             throw new ResponseStatusException(
@@ -79,7 +86,9 @@ public class ImageController {
 
     // 이미지 조회
     @GetMapping("/{filename}")
-    public ResponseEntity<byte[]> getImage(@PathVariable String filename) {
+    @Operation(summary = "이미지 조회", description = "파일명으로 이미지를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "이미지 반환")
+    public ResponseEntity<byte[]> getImage(@Parameter(description = "파일명") @PathVariable String filename) {
         try {
             Path filePath = Paths.get(uploadDir).resolve(filename);
 
@@ -110,6 +119,8 @@ public class ImageController {
     // Base64 업로드 (선택)
     @PostMapping(value = "/upload/base64", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Base64 이미지 업로드", description = "Base64로 인코딩된 이미지를 업로드합니다.")
+    @ApiResponse(responseCode = "200", description = "업로드 성공, 이미지 URL 반환")
     public ImageUploadResponse uploadBase64(@RequestBody Base64UploadRequest request) {
         try {
             // Base64 디코딩

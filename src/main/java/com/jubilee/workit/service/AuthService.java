@@ -119,11 +119,38 @@ public class AuthService {
     }
 
     public AuthResponse googleLogin(GoogleLoginRequest request) {
+        SocialUser socialUser = resolveGoogleUser(request);
+        User user = upsertSocialUser("GOOGLE", socialUser.email(), socialUser.providerId());
+        return createLoginResponse(user);
+    }
+
+    public AuthResponse appleLogin(AppleLoginRequest request) {
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email이 필요합니다.");
+        }
+        String appleId = request.getAppleId();
+        if (appleId == null || appleId.isBlank()) {
+            appleId = request.getEmail();
+        }
+
+        User user = upsertSocialUser("APPLE", request.getEmail(), appleId);
+        return createLoginResponse(user);
+    }
+
+    private SocialUser resolveGoogleUser(GoogleLoginRequest request) {
+        if (request.getIdToken() == null || request.getIdToken().isBlank()) {
+            if (request.getEmail() == null || request.getEmail().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "idToken 또는 email이 필요합니다.");
+            }
+            String googleId = request.getGoogleId();
+            if (googleId == null || googleId.isBlank()) {
+                googleId = request.getEmail();
+            }
+            return new SocialUser(request.getEmail(), googleId);
+        }
+
         if (googleClientId == null || googleClientId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Google 로그인이 설정되지 않았습니다. workit.google.client-id를 설정해주세요.");
-        }
-        if (request.getIdToken() == null || request.getIdToken().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "idToken이 필요합니다.");
         }
 
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
@@ -149,25 +176,40 @@ public class AuthService {
         if (email == null || email.isBlank()) {
             email = googleId + "@google.workit.local";
         }
-        final String lookupEmail = email;
+        return new SocialUser(email, googleId);
+    }
 
-        User user = userRepository.findByGoogleId(googleId)
-                .or(() -> userRepository.findByEmail(lookupEmail))
-                .orElse(null);
+    private User upsertSocialUser(String provider, String email, String providerId) {
+        final String lookupEmail = email;
+        User user;
+
+        if ("GOOGLE".equals(provider)) {
+            user = userRepository.findByGoogleId(providerId)
+                    .or(() -> userRepository.findByEmail(lookupEmail))
+                    .orElse(null);
+        } else {
+            user = userRepository.findByAppleId(providerId)
+                    .or(() -> userRepository.findByEmail(lookupEmail))
+                    .orElse(null);
+        }
 
         if (user == null) {
             user = new User();
             user.setEmail(email);
-            user.setGoogleId(googleId);
-            user.setLoginType("GOOGLE");
             user.setPassword(null);
-            user = userRepository.save(user);
-        } else if (user.getGoogleId() == null) {
-            user.setGoogleId(googleId);
-            user.setLoginType("GOOGLE");
-            user = userRepository.save(user);
         }
 
+        user.setLoginType(provider);
+        if ("GOOGLE".equals(provider)) {
+            user.setGoogleId(providerId);
+        } else {
+            user.setAppleId(providerId);
+        }
+
+        return userRepository.save(user);
+    }
+
+    private AuthResponse createLoginResponse(User user) {
         String token = jwtUtil.createToken(user.getId(), user.getEmail());
         long expiresIn = jwtUtil.getExpirationMs() / 1000;
 
@@ -183,10 +225,6 @@ public class AuthService {
         );
     }
 
-    public AuthResponse appleLogin(AppleLoginRequest request) {
-        throw new ResponseStatusException(
-                HttpStatus.NOT_IMPLEMENTED,
-                "Apple 로그인은 준비 중입니다. Apple identity_token 검증 및 JWKS 연동이 필요합니다."
-        );
+    private record SocialUser(String email, String providerId) {
     }
 }

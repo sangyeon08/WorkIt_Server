@@ -13,7 +13,9 @@ public class ApplicationDto {
     private String jobTitle;
     private String companyName;
     private String companyLogoUrl;
+    private JobCardDto job;
     private String status;
+    private String displayStatus;
     private LocalDateTime appliedAt;
     private LocalDateTime updatedAt;
 

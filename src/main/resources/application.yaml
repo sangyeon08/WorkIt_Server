@@ -3,9 +3,9 @@ spring:
     name: workit
 
   datasource:
-    url: jdbc:mysql://52.79.240.230:3306/workit_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: workit
-    password: 1013
+    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:mysql://localhost:3307/workit_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:workit}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:1013}}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
